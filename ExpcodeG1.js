@@ -24,15 +24,7 @@ Template("trialitems.csv", (row) =>
     "trial",
 
     newText("question", row.question).center().print(),
-    newCanvas("scaleCanvas", 800, 200)
-      .add(50, 50, newText(row.answer1).css({ "font-size": "12px", "text-align": "center" })) // Adding label 1
-      .add(200, 50, newText(row.answer2).css({ "font-size": "12px", "text-align": "center" })) // Adding label 2
-      .add(350, 50, newText(row.answer3).css({ "font-size": "12px", "text-align": "center" })) // Adding label 3
-      .add(500, 50, newText(row.answer4).css({ "font-size": "12px", "text-align": "center" })) // Adding label 4
-      .add(650, 50, newText(row.answer5).css({ "font-size": "12px", "text-align": "center" })) // Adding label 5
-      .add(50, 100, newScale("response", 5).center().radio().print()) // Adding the scale to answer
-      .center()
-      .print(),
+    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5).center().labelsPosition("top").size("auto").print(), // Adding the scale to answer
     newButton("Next").center().print().wait()
   )
 );
