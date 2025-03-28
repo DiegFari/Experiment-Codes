@@ -4,37 +4,19 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 
 // Show the consent first, then intro page with instructions
 // then all the 'experiment' trials in a random order, then send the results and finally show the trial labeled 'end'
-Sequence(
-  "consent",
-  "intro",
-  "trial",
-  "experiment",
-  "ManipulationCheck",
-  "MCDSQuestionaire",
-  SendResults(),
-  "end"
-);
+Sequence("consent", "intro", "trial", "experiment", "ManipulationCheck", "MCDSQuestionaire", SendResults(), "end");
 
 // Showing consent, stored in a html file that you can edit
 newTrial(
   "consent",
   defaultText.print().center(),
   newHtml("consent", "consent.html").print().center(),
-  newText(
-    "instructions",
-    "Press the spacebar to give consent to the experiment."
-  )
-    .print()
-    .center(),
+  newText("instructions", "Press the spacebar to give consent to the experiment.").print().center(),
   newKey("spacebar", " ").wait()
 );
 
 // Showing page with instructions, in a html file that you can edit
-newTrial(
-  "intro",
-  newHtml("intro.html").print(),
-  newButton("Continue.").center().print().wait()
-);
+newTrial("intro", newHtml("intro.html").print(), newButton("Continue.").center().print().wait());
 
 // Starting with the trial section
 Template("trialitems.csv", (row) =>
@@ -43,11 +25,11 @@ Template("trialitems.csv", (row) =>
 
     newText("question", row.question).center().print(),
     newCanvas("scaleCanvas", 800, 200)
-      .add(50, 50, newText(row.answer1).css("font-size", "12px")) // Adding label 1
-      .add(200, 50, newText(row.answer2).css("font-size", "12px")) // Adding label 2
-      .add(350, 50, newText(row.answer3).css("font-size", "12px")) // Adding label 3
-      .add(500, 50, newText(row.answer4).css("font-size", "12px")) // Adding label 4
-      .add(650, 50, newText(row.answer5).css("font-size", "12px")) // Adding label 5
+      .add(50, 50, newText(row.answer1).css({ "font-size": "12px", "text-align": "center" })) // Adding label 1
+      .add(200, 50, newText(row.answer2).css({ "font-size": "12px", "text-align": "center" })) // Adding label 2
+      .add(350, 50, newText(row.answer3).css({ "font-size": "12px", "text-align": "center" })) // Adding label 3
+      .add(500, 50, newText(row.answer4).css({ "font-size": "12px", "text-align": "center" })) // Adding label 4
+      .add(650, 50, newText(row.answer5).css({ "font-size": "12px", "text-align": "center" })) // Adding label 5
       .add(50, 100, newScale("response", 5).center().radio().print()) // Adding the scale to answer
       .center()
       .print(),
@@ -89,11 +71,7 @@ newTrial(
   exitFullscreen(),
   newText("Thank you for your participation!").center().print(),
   // This is a dummy link, it won't actually validate submissions; use the link provided by your pooling platform
-  newText(
-    "<p><a href='https://www.pcibex.net/' target='_blank'>Click here to validate your submission</a></p>"
-  )
-    .center()
-    .print(),
+  newText("<p><a href='https://www.pcibex.net/' target='_blank'>Click here to validate your submission</a></p>").center().print(),
   // Wait on this page forever
   newButton().wait()
 ).setOption("countsForProgressBar", false);
