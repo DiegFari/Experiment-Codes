@@ -1,4 +1,4 @@
-question, type
-"How often do you use chatbots such as Chat-GPT?", trial
-"How often do you use VPN or safe browsers to protect your privacy when browsing the internet?", trial
-"How often do you share personal information on the internet or on social media (e.g. your location, your activities)?", trial
+question, answer1, answer2, answer3, answer4, answer5
+"How often do you use chatbots such as Chat-GPT?", "Never, not even once in a month", “Few times, I use them occasionally, a couple of times a month“, “Sometimes, I tend to use them a couple of times a week“, “Often, I use them on a daily basis“, “Really often, I use them everyday and many times a day“
+"How often do you use VPN or safe browsers to protect your privacy when browsing the internet?", “Never, not even once“, “Few times, about 20% of the times I brows the internet“, “Sometimes, in less than a half of my online researches“, “Often, in more than a half of my online researches“, “Really often, almost every time I brows the internet“
+"How often do you share personal information on the internet or on social media (e.g. your location, your activities)?", “Never, not even once“, “Few times, less than once a month“, “Sometimes, a couple of times a month“, “Often, every week“, “Really often, on a daily basis“
