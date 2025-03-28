@@ -48,7 +48,7 @@ Template("trialitems.csv", (row) =>
       .add(350, 50, newText(row.answer3).css("font-size", "12px")) // Adding label 3
       .add(500, 50, newText(row.answer4).css("font-size", "12px")) // Adding label 4
       .add(650, 50, newText(row.answer5).css("font-size", "12px")) // Adding label 5
-      .add(50, 100, newScale("response", 5).center().radio().log().print()) // Adding the scale to answer
+      .add(50, 100, newScale("response", 5).center().radio().print()) // Adding the scale to answer
       .center()
       .print(),
     newButton("Next").center().print().wait()
