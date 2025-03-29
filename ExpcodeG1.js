@@ -103,7 +103,7 @@ Template("expitems.csv", (row) =>
   )
 );
 
-Newtrial(
+newTrial(
   "Message",
 
   newText(
