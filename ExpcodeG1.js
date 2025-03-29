@@ -4,38 +4,19 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 
 // Show the consent first, then intro page with instructions
 // then all the 'experiment' trials in a random order, then send the results and finally show the trial labeled 'end'
-Sequence(
-  "consent",
-  "intro",
-  "trial",
-  "trial_end",
-  "experiment",
-  "ManipulationCheck",
-  "MCDSQuestionaire",
-  SendResults(),
-  "end"
-);
+Sequence("consent", "intro", "trial", "trial_end", "experiment", "ManipulationCheck", "MCDSQuestionaire", SendResults(), "end");
 
 // Showing consent, stored in a html file that you can edit
 newTrial(
   "consent",
   defaultText.print().center(),
   newHtml("consent", "consent.html").print().center(),
-  newText(
-    "instructions",
-    "Press the spacebar to give consent to the experiment."
-  )
-    .print()
-    .center(),
+  newText("instructions", "Press the spacebar to give consent to the experiment.").print().center(),
   newKey("spacebar", " ").wait()
 );
 
 // Showing page with instructions, in a html file that you can edit
-newTrial(
-  "intro",
-  newHtml("intro.html").print(),
-  newButton("Continue.").center().print().wait()
-);
+newTrial("intro", newHtml("intro.html").print(), newButton("Continue.").center().print().wait());
 
 // Starting with the trial section
 Template("trialitems.csv", (row) =>
@@ -43,18 +24,7 @@ Template("trialitems.csv", (row) =>
     "trial",
 
     newText("question", row.question).center().print(),
-    newScale(
-      "response",
-      row.answer1,
-      row.answer2,
-      row.answer3,
-      row.answer4,
-      row.answer5
-    )
-      .center()
-      .labelsPosition("top")
-      .size("auto")
-      .print(), // Adding the scale to answer
+    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5).center().labelsPosition("top").size("auto").print(), // Adding the scale to answer
     newButton("Next").center().print().wait()
   )
 );
@@ -79,18 +49,7 @@ Template("expitems.csv", (row) =>
     newMouseTracker("mouse") // Starting the mouse tracking
       .log()
       .start(),
-    newScale(
-      "response",
-      row.answer1,
-      row.answer2,
-      row.answer3,
-      row.answer4,
-      row.answer5
-    )
-      .center()
-      .labelsPosition("top")
-      .size("auto")
-      .print(), // Adding the scale to answer
+    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5).center().labelsPosition("top").size("auto").print(), // Adding the scale to answer
     newButton("Next").center().print().wait(),
     // Stop RT
     getTimer("RT").stop(),
@@ -107,11 +66,7 @@ newTrial(
   exitFullscreen(),
   newText("Thank you for your participation!").center().print(),
   // This is a dummy link, it won't actually validate submissions; use the link provided by your pooling platform
-  newText(
-    "<p><a href='https://www.pcibex.net/' target='_blank'>Click here to validate your submission</a></p>"
-  )
-    .center()
-    .print(),
+  newText("<p><a href='https://www.pcibex.net/' target='_blank'>Click here to validate your submission</a></p>").center().print(),
   // Wait on this page forever
   newButton().wait()
 ).setOption("countsForProgressBar", false);
