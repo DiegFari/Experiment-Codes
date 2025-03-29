@@ -7,6 +7,8 @@
 }
 
 .question {
+  text-align: center;
+  margin: 0 10rem 0 10rem;
   font-size: 18px;
 }
 
@@ -36,9 +38,13 @@
 .Scale {
   text-align: center;
   margin: 5rem 2.5rem 5rem 2.5rem;
-  gap: 2.5rem;
+  gap: 5rem;
 }
 
 .Scale > div {
   margin: 0 !important;
+}
+
+.Html-container {
+  justify-content: center;
 }

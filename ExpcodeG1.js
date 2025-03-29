@@ -4,7 +4,7 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 
 // Show the consent first, then intro page with instructions
 // then all the 'experiment' trials in a random order, then send the results and finally show the trial labeled 'end'
-Sequence("consent", "intro", "trial", "trial_end", "experiment", "Message", "ManipulationCheck", "MCDSQuestionaire", SendResults(), "end");
+Sequence("consent", "intro", "trial", "trialend", "experiment", "experimentend", "ManipulationCheck", "MCDSQuestionaire", SendResults(), "end");
 
 // Showing consent, stored in a html file that you can edit
 newTrial(
@@ -34,15 +34,7 @@ Template("trialitems.csv", (row) =>
   )
 );
 
-newTrial(
-  "trial_end",
-  newText(
-    "You are now finished with the trial section. In the next section you will answer some questions regarding the interaction with chatbots (The template will be simplified from now on)."
-  )
-    .center()
-    .print(),
-  newButton("Go to the next section").center().print().wait()
-);
+newTrial("trialend", newHtml("trialend.html").print(), newButton("Go to the next section").center().print().wait());
 
 // Starting the experiment, by using data from csv file we made previously
 Template("expitems.csv", (row) =>
@@ -54,8 +46,14 @@ Template("expitems.csv", (row) =>
     newMouseTracker("mouse") // Starting the mouse tracking
       .log()
       .start(),
-    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5).center().labelsPosition("top").size("auto").print().log(), // Adding the scale to answer
-    newButton("Next").center().print().wait(),
+    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5)
+      .center()
+      .labelsPosition("top")
+      .callback(getButton("Next").visible())
+      .size("auto")
+      .print()
+      .log(), // Adding the scale to answer
+    newButton("Next").center().hidden().print().wait(),
     // Stop RT
     getTimer("RT").stop(),
     // Save RT
@@ -65,18 +63,12 @@ Template("expitems.csv", (row) =>
   )
 );
 
-newTrial(
-  "Message",
-
-  newText("The Target questions are finished, but there are still some questions to be answered").center().print(),
-
-  newButton("Go to the next section").center().print().wait()
-);
+newTrial("experimentend", newHtml("experimentend.html").print(), newButton("Go to the next section").center().print().wait());
 
 newTrial(
   "ManipulationCheck",
 
-  newText("I felt that my answers are going to be kept anonymous").center().print(),
+  newText("question", "I felt that my answers are going to be kept anonymous").center().print(),
   newScale("response", "Strongly disagree", "Disagree", "Not agree nor disagree", "Agree", "Strongly agree")
     .center()
     .labelsPosition("top")
