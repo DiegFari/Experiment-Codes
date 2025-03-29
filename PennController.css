@@ -9,4 +9,5 @@
 .Scale {
   text-align: center;
   margin: 2.5rem 0;
+  gap: 2rem; /* Adjust this value to increase/decrease spacing */
 }
