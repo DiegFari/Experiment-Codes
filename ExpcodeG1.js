@@ -79,14 +79,18 @@ Template("expitems.csv", (row) =>
     newMouseTracker("mouse") // Starting the mouse tracking
       .log()
       .start(),
-    newCanvas("scaleCanvas", 800, 200)
-      .add(50, 50, newText("Never").css("font-size", "12px")) // Adding label 1
-      .add(200, 50, newText("Few times").css("font-size", "12px")) // Adding label 2
-      .add(350, 50, newText("Sometimes").css("font-size", "12px")) // Adding label 3
-      .add(500, 50, newText("Often").css("font-size", "12px")) // Adding label 4
-      .add(650, 50, newText("Really often").css("font-size", "12px")) // Adding label 5
-      .add(50, 100, newScale("response", 5).center().radio().log().print()) // Adding the scale to answer
-      .print(),
+    newScale(
+      "response",
+      row.answer1,
+      row.answer2,
+      row.answer3,
+      row.answer4,
+      row.answer5
+    )
+      .center()
+      .labelsPosition("top")
+      .size("auto")
+      .print(), // Adding the scale to answer
     newButton("Next").center().print().wait(),
     // Stop RT
     getTimer("RT").stop(),
