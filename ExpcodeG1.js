@@ -10,6 +10,7 @@ Sequence(
   "trial",
   "trial_end",
   "experiment",
+  "Message",
   "ManipulationCheck",
   "MCDSQuestionaire",
   SendResults(),
@@ -34,7 +35,7 @@ newTrial(
 newTrial(
   "intro",
   newHtml("intro.html").print(),
-  newButton("Continue.").center().print().wait()
+  newButton("Continue").center().print().wait()
 );
 
 // Starting with the trial section
@@ -100,6 +101,18 @@ Template("expitems.csv", (row) =>
     // Stop the mouse tracking
     getMouseTracker("mouse").stop()
   )
+);
+
+Template(
+  "Message",
+
+  newText(
+    "The Target questions are finished, but there are still some questions to be answered"
+  )
+    .center()
+    .print(),
+
+  newButton("Go to the next section").center().print().wait()
 );
 
 newTrial(
