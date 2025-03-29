@@ -124,6 +124,21 @@ newTrial(
   newButton("Next").center().print().wait()
 );
 
+Template("MCDSQuestionaire", (row) =>
+  newTrial(
+    "MCDSQ",
+
+    newText("question", row.question).center().print(),
+    newScale("response", "True", "False")
+      .center()
+      .labelsPosition("top")
+      .log()
+      .size("auto")
+      .print(), // Adding the scale to answer
+    newButton("Next").center().print().wait()
+  )
+);
+
 // The end of the experiment
 newTrial(
   "end",
