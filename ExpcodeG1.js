@@ -5,8 +5,9 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 // Show the consent first, then intro page with instructions
 // then all the 'experiment' trials in a random order, then send the results and finally show the trial labeled 'end'
 Sequence(
-  "consent",
   "intro",
+  "consent",
+  "pre-trial",
   "trial",
   "trialend",
   "experiment",
@@ -18,17 +19,33 @@ Sequence(
   "end"
 );
 
-// Showing consent, stored in a html file that you can edit
+// Showing page with instructions, in a html file that you can edit
+newTrial(
+  "intro",
+  newHtml("intro.html").print(),
+  newButton("Continue").center().print().wait()
+);
+
 newTrial(
   "consent",
   defaultText.print().center(),
   newHtml("consent", "consent.html").print().center(),
-  newText("instructions", "Press the spacebar to give consent to the experiment.").print().center(),
+  newText(
+    "instructions",
+    "Press the spacebar to give consent to the experiment."
+  )
+    .print()
+    .center(),
   newKey("spacebar", " ").wait()
 );
 
-// Showing page with instructions, in a html file that you can edit
-newTrial("intro", newHtml("intro.html").print(), newButton("Continue").center().print().wait());
+newTrial(
+  "pre-trial",
+  defaultText.print().center(),
+  newHtml("pretrial", "pretrial.html").print().center(),
+
+  newButton("Start with the trials").center().print().wait()
+);
 
 // Starting with the trial section
 Template("trialitems.csv", (row) =>
@@ -36,7 +53,14 @@ Template("trialitems.csv", (row) =>
     "trial",
 
     newText("question", row.question).center().print(),
-    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5)
+    newScale(
+      "response",
+      row.answer1,
+      row.answer2,
+      row.answer3,
+      row.answer4,
+      row.answer5
+    )
       .center()
       .labelsPosition("top")
       .callback(getButton("Next").visible())
@@ -46,7 +70,11 @@ Template("trialitems.csv", (row) =>
   )
 );
 
-newTrial("trialend", newHtml("trialend.html").print(), newButton("Go to the next section").center().print().wait());
+newTrial(
+  "trialend",
+  newHtml("trialend.html").print(),
+  newButton("Go to the next section").center().print().wait()
+);
 
 // Starting the experiment, by using data from csv file we made previously
 Template("expitems.csv", (row) =>
@@ -58,7 +86,14 @@ Template("expitems.csv", (row) =>
     newMouseTracker("mouse") // Starting the mouse tracking
       .log()
       .start(),
-    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5)
+    newScale(
+      "response",
+      row.answer1,
+      row.answer2,
+      row.answer3,
+      row.answer4,
+      row.answer5
+    )
       .center()
       .labelsPosition("top")
       .callback(getButton("Next").visible())
@@ -75,13 +110,26 @@ Template("expitems.csv", (row) =>
   )
 );
 
-newTrial("experimentend", newHtml("experimentend.html").print(), newButton("Go to the next section").center().print().wait());
+newTrial(
+  "experimentend",
+  newHtml("experimentend.html").print(),
+  newButton("Show statement").center().print().wait()
+);
 
 newTrial(
   "ManipulationCheck",
 
-  newText("question", "I felt that my answers are going to be kept anonymous").center().print(),
-  newScale("response", "Strongly disagree", "Disagree", "Not agree nor disagree", "Agree", "Strongly agree")
+  newText("question", "I felt that my answers are going to be kept anonymous")
+    .center()
+    .print(),
+  newScale(
+    "response",
+    "Strongly disagree",
+    "Disagree",
+    "Not agree nor disagree",
+    "Agree",
+    "Strongly agree"
+  )
     .center()
     .labelsPosition("top")
     .callback(getButton("Next").visible())
@@ -95,7 +143,7 @@ newTrial(
   "MCDSintructions",
 
   newHtml("MCDSinstr.html").print(),
-  newButton("Go to the next section").center().print().wait()
+  newButton("Go to the final section").center().print().wait()
 );
 
 Template("FinalQ.csv", (row) =>
@@ -103,18 +151,20 @@ Template("FinalQ.csv", (row) =>
     "MCDSQuestionaire",
 
     newText("question", row.question).center().print(),
-    newScale("response", "True", "False").center().labelsPosition("top").callback(getButton("Next").visible()).log().size("auto").print(), // Adding the scale to answer
+    newScale("response", "True", "False")
+      .center()
+      .labelsPosition("top")
+      .callback(getButton("Next").visible())
+      .log()
+      .size("auto")
+      .print(), // Adding the scale to answer
     newButton("Next").center().hidden().print().wait()
   )
 );
 
-// The end of the experiment
 newTrial(
   "end",
   exitFullscreen(),
-  newText("Thank you for your participation!").center().print(),
-  // This is a dummy link, it won't actually validate submissions; use the link provided by your pooling platform
-  newText("<p><a href='https://www.pcibex.net/' target='_blank'>Click here to validate your submission</a></p>").center().print(),
-  // Wait on this page forever
+  newHtml("end.html").print(),
   newButton().wait()
 ).setOption("countsForProgressBar", false);
