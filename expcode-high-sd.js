@@ -2,11 +2,10 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 
 // DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
 
-// Show the consent first, then intro page with instructions
-// then all the 'experiment' trials in a random order, then send the results and finally show the trial labeled 'end'
 Sequence(
-  "intro",
+  "intro-high-sd",
   "consent",
+  "personal-info",
   "pre-trial",
   "trial",
   "trialend",
@@ -20,24 +19,26 @@ Sequence(
 );
 
 // Showing page with instructions, in a html file that you can edit
-newTrial(
-  "intro",
-  newHtml("intro.html").print(),
-  newButton("Continue").center().print().wait()
-);
+newTrial("intro-high-sd", newHtml("intro-high-sd.html").print(), newButton("Continue").center().print().wait());
+
+newTrial("consent", defaultText.print().center(), newHtml("consent", "consent.html").print().center(), newKey("spacebar", " ").wait());
 
 newTrial(
-  "consent",
-  defaultText.print().center(),
-  newHtml("consent", "consent.html").print().center(),
-  newText(
-    "instructions",
-    "Press the spacebar to give consent to the experiment."
-  )
-    .print()
-    .center(),
-  newKey("spacebar", " ").wait()
-);
+  "personal-info",
+  newText("Please enter your age:"),
+  newTextInput("input_age").cssContainer({ "margin-bottom": "1em" }).center().print(),
+  newVar("age").global().set(getTextInput("input_age")),
+  newText("Please select your gender:"),
+  newScale("scale_gender", "Male", "Female", "Non-binary").cssContainer({ "margin-bottom": "1em" }).center().print(),
+  newVar("gender").global().set(getScale("scale_gender")),
+  newText("Please enter your ocupation:"),
+  newTextInput("input_occupation").cssContainer({ "margin-bottom": "1em" }).center().print(),
+  newVar("occupation").global().set(getScale("input_occupation")),
+  newButton("Next").center().hidden().print().wait()
+)
+  .log("age", getVar("age"))
+  .log("gender", getVar("gender"))
+  .log("occupation", getVar("occupation"));
 
 newTrial(
   "pre-trial",
@@ -53,14 +54,7 @@ Template("trialitems.csv", (row) =>
     "trial",
 
     newText("question", row.question).center().print(),
-    newScale(
-      "response",
-      row.answer1,
-      row.answer2,
-      row.answer3,
-      row.answer4,
-      row.answer5
-    )
+    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5)
       .center()
       .labelsPosition("top")
       .callback(getButton("Next").visible())
@@ -70,11 +64,7 @@ Template("trialitems.csv", (row) =>
   )
 );
 
-newTrial(
-  "trialend",
-  newHtml("trialend.html").print(),
-  newButton("Go to the next section").center().print().wait()
-);
+newTrial("trialend", newHtml("trialend.html").print(), newButton("Go to the next section").center().print().wait());
 
 // Starting the experiment, by using data from csv file we made previously
 Template("expitems.csv", (row) =>
@@ -86,14 +76,7 @@ Template("expitems.csv", (row) =>
     newMouseTracker("mouse") // Starting the mouse tracking
       .log()
       .start(),
-    newScale(
-      "response",
-      row.answer1,
-      row.answer2,
-      row.answer3,
-      row.answer4,
-      row.answer5
-    )
+    newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5)
       .center()
       .labelsPosition("top")
       .callback(getButton("Next").visible())
@@ -110,26 +93,13 @@ Template("expitems.csv", (row) =>
   )
 );
 
-newTrial(
-  "experimentend",
-  newHtml("experimentend.html").print(),
-  newButton("Show statement").center().print().wait()
-);
+newTrial("experimentend", newHtml("experimentend.html").print(), newButton("Show statement").center().print().wait());
 
 newTrial(
   "ManipulationCheck",
 
-  newText("question", "I felt that my answers are going to be kept anonymous")
-    .center()
-    .print(),
-  newScale(
-    "response",
-    "Strongly disagree",
-    "Disagree",
-    "Not agree nor disagree",
-    "Agree",
-    "Strongly agree"
-  )
+  newText("question", "I felt that my answers are going to be kept anonymous").center().print(),
+  newScale("response", "Strongly disagree", "Disagree", "Not agree nor disagree", "Agree", "Strongly agree")
     .center()
     .labelsPosition("top")
     .callback(getButton("Next").visible())
@@ -151,20 +121,9 @@ Template("FinalQ.csv", (row) =>
     "MCDSQuestionaire",
 
     newText("question", row.question).center().print(),
-    newScale("response", "True", "False")
-      .center()
-      .labelsPosition("top")
-      .callback(getButton("Next").visible())
-      .log()
-      .size("auto")
-      .print(), // Adding the scale to answer
+    newScale("response", "True", "False").center().labelsPosition("top").callback(getButton("Next").visible()).log().size("auto").print(), // Adding the scale to answer
     newButton("Next").center().hidden().print().wait()
   )
 );
 
-newTrial(
-  "end",
-  exitFullscreen(),
-  newHtml("end.html").print(),
-  newButton().wait()
-).setOption("countsForProgressBar", false);
+newTrial("end", exitFullscreen(), newHtml("end.html").print(), newButton().wait()).setOption("countsForProgressBar", false);
