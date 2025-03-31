@@ -4,32 +4,43 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 
 Sequence(
   "intro",
-  "consent-low-sd",
+  "consent-high-sd",
   "personal-info",
-  "pre-trial",
+  "trial-start",
   "trial",
-  "trialend",
+  "experiment-start-high-sd",
   "experiment",
-  "experimentend",
-  "ManipulationCheck",
-  "MCDSintructions",
-  "MCDSQuestionaire",
+  "manipulation-check-start",
+  "manipulation-check",
+  "sd-bias-start",
+  "sd-bias",
   SendResults(),
   "end"
 );
 
-// Showing page with instructions, in a html file that you can edit
+// Start by displaying an introduction and a consent form
 newTrial("intro", newHtml("intro.html").print(), newButton("Continue").center().print().wait());
 
-newTrial("consent-low-sd", defaultText.print().center(), newHtml("consent-low-sd", "consent-low-sd.html").print().center(), newKey("spacebar", " ").wait());
+newTrial("consent-high-sd", defaultText.print().center(), newHtml("consent-high-sd", "consent-high-sd.html").print().center(), newKey("spacebar", " ").wait());
 
+// Ask for some personal information from subjects (note: full name and email are not logged)
 newTrial(
   "personal-info",
   newText("personal-info-title", "Personal information")
     .cssContainer({ "text-align": "center", "font-weight": "900", "font-size": "32px", margin: "1.8rem 10rem 3rem 10rem" })
     .center()
     .print(),
-  newText("instructions-age", "Please enter your age (press 'enter' afterwards):")
+  newText("instructions-fullname", "Please enter your full name (press 'Enter' afterwards):")
+    .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
+    .center()
+    .print(),
+  newTextInput("input_fullname").cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 2rem 10rem" }).center().print().wait(),
+  newText("instructions-email", "Please enter your email (press 'Enter' afterwards):")
+    .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
+    .center()
+    .print(),
+  newTextInput("input_email").cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 2rem 10rem" }).center().print().wait(),
+  newText("instructions-age", "Please enter your age (press 'Enter' afterwards):")
     .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
     .center()
     .print(),
@@ -46,50 +57,43 @@ newTrial(
     .print()
     .wait(),
   newVar("gender").global().set(getScale("scale_gender")),
-  newText("instructions-occupation", "Please enter your occupation (press 'enter' afterwards):")
+  newText("instructions-occupation", "Please enter your occupation (press 'Enter' afterwards):")
     .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
     .center()
     .print(),
   newTextInput("input_occupation").cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 2rem 10rem" }).center().print().wait(),
   newVar("occupation").global().set(getTextInput("input_occupation")),
-  newText("instructions-save", "Please verify the data entered and then click on the 'Next' button:")
+  newText("instructions-save", "Please verify the data entered and then click on the 'Continue' button:")
     .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
     .center()
     .print(),
-  newButton("Next").cssContainer({ "margin-bottom": "5em" }).center().print().wait()
+  newButton("Continue").cssContainer({ "margin-bottom": "5em" }).center().print().wait()
 )
   .log("age", getVar("age"))
   .log("gender", getVar("gender"))
   .log("occupation", getVar("occupation"));
 
-newTrial(
-  "pre-trial",
-  defaultText.print().center(),
-  newHtml("pretrial", "pretrial.html").print().center(),
+// Explain the first section (practice questions) and start displaying the questions (from 'trial-items.csv')
+newTrial("trial-start", newHtml("trial-start", "trial-start.html").print().center(), newButton("Start").center().print().wait());
 
-  newButton("Start with the trials").center().print().wait()
-);
-
-// Starting with the trial section
-Template("trialitems.csv", (row) =>
+Template("trial-items.csv", (row) =>
   newTrial(
     "trial",
-
     newText("question", row.question).center().print(),
     newScale("response", row.answer1, row.answer2, row.answer3, row.answer4, row.answer5)
       .center()
       .labelsPosition("top")
       .callback(getButton("Next").visible())
       .size("auto")
-      .print(), // Adding the scale to answer
+      .print(),
     newButton("Next").center().hidden().print().wait()
   )
 );
 
-newTrial("trialend", newHtml("trialend.html").print(), newButton("Go to the next section").center().print().wait());
+// Explain the second section (target questions) and start displaying the questions (from 'experiment-items.csv')
+newTrial("experiment-start-high-sd", newHtml("experiment-start-high-sd.html").print(), newButton("Start").center().print().wait());
 
-// Starting the experiment, by using data from csv file we made previously
-Template("expitems.csv", (row) =>
+Template("experiment-items.csv", (row) =>
   newTrial(
     "experiment",
     newText("question", row.question).center().css("height", "75px").print(),
@@ -104,43 +108,38 @@ Template("expitems.csv", (row) =>
       .callback(getButton("Next").visible())
       .size("auto")
       .print()
-      .log("all"), // Adding the scale to answer
+      .log("all"),
     newButton("Next").center().hidden().print().wait(),
-    // Stop RT
-    getTimer("RT").stop(),
-    // Save RT
-    newVar("RT").global().set(getTimer("RT").value),
-    // Stop the mouse tracking
-    getMouseTracker("mouse").stop()
+    getTimer("RT").stop(), // Stop RT
+    getMouseTracker("mouse").stop() // Stop the mouse tracking
   )
+    .log("question", row.question)
+    .log("type", row.type)
 );
 
-newTrial("experimentend", newHtml("experimentend.html").print(), newButton("Show statement").center().print().wait());
+// Explain the third section (manipulation check) and display a question
+newTrial("manipulation-check-start", newHtml("manipulation-check-start.html").print(), newButton("Start").center().print().wait());
 
 newTrial(
-  "ManipulationCheck",
+  "manipulation-check",
 
-  newText("question", "I felt that my answers are going to be kept anonymous").center().print(),
+  newText("question", "I felt my answers were anonymous").center().print(),
   newScale("response", "Strongly disagree", "Disagree", "Not agree nor disagree", "Agree", "Strongly agree")
     .center()
     .labelsPosition("top")
     .callback(getButton("Next").visible())
     .size("auto")
     .log()
-    .print(), // Adding the scale to answer
+    .print(),
   newButton("Next").center().hidden().print().wait()
 );
 
-newTrial(
-  "MCDSintructions",
+// Explain the final section (social desireability bias questions) and start displaying the questions (from sd-bias-items.csv)
+newTrial("sd-bias-start", newHtml("sd-bias-start.html").print(), newButton("Start").center().print().wait());
 
-  newHtml("MCDSinstr.html").print(),
-  newButton("Go to the final section").center().print().wait()
-);
-
-Template("FinalQ.csv", (row) =>
+Template("sd-bias-items.csv", (row) =>
   newTrial(
-    "MCDSQuestionaire",
+    "sd-bias",
 
     newText("question", row.question).center().print(),
     newScale("response", "True", "False").center().labelsPosition("top").callback(getButton("Next").visible()).log().size("auto").print(), // Adding the scale to answer
