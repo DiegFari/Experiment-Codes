@@ -25,16 +25,16 @@ newTrial("consent", defaultText.print().center(), newHtml("consent", "consent.ht
 
 newTrial(
   "personal-info",
-  newText("Please enter your age:"),
-  newTextInput("input_age").cssContainer({ "margin-bottom": "1em" }).center().print(),
+  newText("instructions-age", "Please enter your age:").center().print(),
+  newTextInput("input_age").cssContainer({ "margin-bottom": "1em" }).center().print().wait(),
   newVar("age").global().set(getTextInput("input_age")),
-  newText("Please select your gender:"),
-  newScale("scale_gender", "Male", "Female", "Non-binary").cssContainer({ "margin-bottom": "1em" }).center().print(),
+  newText("instructions-gender", "Please select your gender:").center().print(),
+  newScale("scale_gender", "Male", "Female", "Non-binary").labelsPosition("bottom").center().print().wait(),
   newVar("gender").global().set(getScale("scale_gender")),
-  newText("Please enter your ocupation:"),
-  newTextInput("input_occupation").cssContainer({ "margin-bottom": "1em" }).center().print(),
-  newVar("occupation").global().set(getScale("input_occupation")),
-  newButton("Next").center().hidden().print().wait()
+  newText("instructions-occupation", "Please enter your occupation:").center().print(),
+  newTextInput("input_occupation").cssContainer({ "margin-bottom": "1em" }).center().print().wait(),
+  newVar("occupation").global().set(getTextInput("input_occupation")),
+  newButton("Next").center().print().wait()
 )
   .log("age", getVar("age"))
   .log("gender", getVar("gender"))
