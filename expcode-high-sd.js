@@ -3,8 +3,8 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 // DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
 
 Sequence(
-  "intro-high-sd",
-  "consent",
+  "intro",
+  "consent-high-sd",
   "personal-info",
   "pre-trial",
   "trial",
@@ -19,9 +19,9 @@ Sequence(
 );
 
 // Showing page with instructions, in a html file that you can edit
-newTrial("intro-high-sd", newHtml("intro-high-sd.html").print(), newButton("Continue").center().print().wait());
+newTrial("intro", newHtml("intro.html").print(), newButton("Continue").center().print().wait());
 
-newTrial("consent", defaultText.print().center(), newHtml("consent", "consent.html").print().center(), newKey("spacebar", " ").wait());
+newTrial("consent-high-sd", defaultText.print().center(), newHtml("consent-high-sd", "consent-high-sd.html").print().center(), newKey("spacebar", " ").wait());
 
 newTrial(
   "personal-info",

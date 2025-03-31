@@ -3,8 +3,8 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 // DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
 
 Sequence(
-  "intro-low-sd",
-  "consent",
+  "intro",
+  "consent-low-sd",
   "personal-info",
   "pre-trial",
   "trial",
@@ -19,22 +19,44 @@ Sequence(
 );
 
 // Showing page with instructions, in a html file that you can edit
-newTrial("intro-low-sd", newHtml("intro-low-sd.html").print(), newButton("Continue").center().print().wait());
+newTrial("intro", newHtml("intro.html").print(), newButton("Continue").center().print().wait());
 
-newTrial("consent", defaultText.print().center(), newHtml("consent", "consent.html").print().center(), newKey("spacebar", " ").wait());
+newTrial("consent-low-sd", defaultText.print().center(), newHtml("consent-low-sd", "consent-low-sd.html").print().center(), newKey("spacebar", " ").wait());
 
 newTrial(
   "personal-info",
-  newText("instructions-age", "Please enter your age:").center().print(),
-  newTextInput("input_age").cssContainer({ "margin-bottom": "1em" }).center().print().wait(),
+  newText("personal-info-title", "Personal information")
+    .cssContainer({ "text-align": "center", "font-weight": "900", "font-size": "32px", margin: "1.8rem 10rem 3rem 10rem" })
+    .center()
+    .print(),
+  newText("instructions-age", "Please enter your age (press 'enter' afterwards):")
+    .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
+    .center()
+    .print(),
+  newTextInput("input_age").cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 2rem 10rem" }).center().print().wait(),
   newVar("age").global().set(getTextInput("input_age")),
-  newText("instructions-gender", "Please select your gender:").center().print(),
-  newScale("scale_gender", "Male", "Female", "Non-binary").labelsPosition("bottom").center().print().wait(),
+  newText("instructions-gender", "Please select your gender:")
+    .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
+    .center()
+    .print(),
+  newScale("scale_gender", "Male", "Female", "Non-binary", "I would prefer not to specify")
+    .css({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 2rem 10rem" })
+    .labelsPosition("bottom")
+    .center()
+    .print()
+    .wait(),
   newVar("gender").global().set(getScale("scale_gender")),
-  newText("instructions-occupation", "Please enter your occupation:").center().print(),
-  newTextInput("input_occupation").cssContainer({ "margin-bottom": "1em" }).center().print().wait(),
+  newText("instructions-occupation", "Please enter your occupation (press 'enter' afterwards):")
+    .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
+    .center()
+    .print(),
+  newTextInput("input_occupation").cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 2rem 10rem" }).center().print().wait(),
   newVar("occupation").global().set(getTextInput("input_occupation")),
-  newButton("Next").center().print().wait()
+  newText("instructions-save", "Please verify the data entered and then click on the 'Next' button:")
+    .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
+    .center()
+    .print(),
+  newButton("Next").cssContainer({ "margin-bottom": "5em" }).center().print().wait()
 )
   .log("age", getVar("age"))
   .log("gender", getVar("gender"))
