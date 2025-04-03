@@ -63,6 +63,12 @@ newTrial(
     .print(),
   newTextInput("input_occupation").cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 2rem 10rem" }).center().print().wait(),
   newVar("occupation").global().set(getTextInput("input_occupation")),
+  newText("instructions-nationality", "Please enter your nationality (press 'Enter' afterwards):")
+    .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
+    .center()
+    .print(),
+  newTextInput("input_nationality").cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 2rem 10rem" }).center().print().wait(),
+  newVar("nationality").global().set(getTextInput("input_nationality")),
   newText("instructions-save", "Please verify the data entered and then click on the 'Continue' button:")
     .cssContainer({ "text-align": "center", "font-size": "18px", margin: "0rem 10rem 1rem 10rem" })
     .center()
@@ -71,7 +77,8 @@ newTrial(
 )
   .log("age", getVar("age"))
   .log("gender", getVar("gender"))
-  .log("occupation", getVar("occupation"));
+  .log("occupation", getVar("occupation"))
+  .log("nationality", getVar("nationality"));
 
 // Explain the first section (practice questions) and start displaying the questions (from 'trial-items.csv')
 newTrial("trial-start", newHtml("trial-start", "trial-start.html").print().center(), newButton("Start").center().print().wait());
