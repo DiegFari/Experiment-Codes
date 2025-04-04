@@ -134,7 +134,7 @@ occupation_summary <- results %>%
   # 1. Select only one value per subject 
   distinct(Subject, Occupation) %>% 
   # 2. Prepare data for comparison 
-  mutate(Occupation = tolower(Occupation), Occupation = case_when(grepl("student", Occupation) ~ "student", TRUE ~ Occupation)) %>%
+  mutate(Occupation = tolower(Occupation), Occupation = case_when(grepl("student", Occupation) ~ "student", grepl("nini", Occupation) ~ "null", TRUE ~ Occupation)) %>%
   # 3. Calculate percentage and sort
   group_by(Occupation) %>%
   summarize(
@@ -158,6 +158,8 @@ nationality_summary <- results %>%
     Percentage = round((n() / n_distinct(results$Subject)) * 100, 1)
   ) %>%
   arrange(desc(Percentage))
+
+print(nationality_summary)
 
 # Group percentages:
 group_summary <- results %>%
