@@ -24,9 +24,10 @@
 # 13. age.
 # 14. gender.
 # 15. occupation.
-# 16. Comments.
-1743612965,51fee900c76b7533e54960ec2f063c22,PennController,3,0,personal-info,NULL,PennController,2,_Trial_,Start,1743612633978,24,Female,Student,NULL
-1743612965,51fee900c76b7533e54960ec2f063c22,PennController,3,0,personal-info,NULL,PennController,2,_Trial_,End,1743612670295,24,Female,Student,NULL
+# 16. nationality.
+# 17. Comments.
+1743612965,51fee900c76b7533e54960ec2f063c22,PennController,3,0,personal-info,NULL,PennController,2,_Trial_,Start,1743612633978,24,Female,Student,NULL,NULL
+1743612965,51fee900c76b7533e54960ec2f063c22,PennController,3,0,personal-info,NULL,PennController,2,_Trial_,End,1743612670295,24,Female,Student,NULL,NULL
 # 13. Comments.
 1743612965,51fee900c76b7533e54960ec2f063c22,PennController,4,0,trial-start,NULL,PennController,3,_Trial_,Start,1743612670298,NULL
 1743612965,51fee900c76b7533e54960ec2f063c22,PennController,4,0,trial-start,NULL,PennController,3,_Trial_,End,1743612678816,NULL

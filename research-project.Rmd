@@ -25,10 +25,10 @@ library(ordinal)
 # Set working directory to source file location
 
 # Documentation function to read in PCIbex Farm results files (source: https://doc.pcibex.net/advanced-tutorial/12_examining-data.html#reading-in-results)
-read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols){cols[cols==col]<-paste(col,"Ibex",sep=".");return(cols)}) {
+read.pcibex <- function(filepath, fun.col=function(col,cols){cols[cols==col]<-paste(col,"Ibex",sep=".");return(cols)}) {
   n.cols <- max(count.fields(filepath,sep=",",quote=NULL),na.rm=TRUE)
-  if (auto.colnames){
-    cols <- c()
+  
+  cols <- c()
     con <- file(filepath, "r")
     while ( TRUE ) {
       line <- readLines(con, n = 1, warn=FALSE)
@@ -48,52 +48,33 @@ read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols)
         }
       }
     }
+    
     close(con)
-    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=cols))
-  }
-  else{
-    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=seq(1:n.cols)))
-  }
+    
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=cols, colClasses="character"))
 }
 
 # Function to format PCIbex Farm results files
-format.pcibex <- function(results) {
-  formatted-results <- results
+format.pcibex <- function(results, group) {
+  # Rename and remove noise
+  formatted_results <- results %>% 
+    rename(Subject = MD5.hash.of.participant.s.IP.address, ItemNumber = Order.number.of.item, ItemType = Label, Age = age, Gender = gender, Occupation = occupation, Nationality = nationality) %>% 
+    select(-Results.reception.time, -Controller.name, -Inner.element.number, -Latin.Square.Group, -Comments) %>% 
+    filter(ItemType %in% c('personal-info', 'experiment', 'manipulation-check', 'sd-bias')) %>% 
+    filter(PennElementType != 'Timer') %>% 
+    mutate(group = group)
+  
+  return(formatted_results)
 }
 
 # Read in result files
-results_high_sd <- read.pcibex("results_high_sd.csv")
-results_low_sd <- read.pcibex("results_low_sd.csv")
+results_high_sd <- read.pcibex("results_high_sd.csv") %>% format.pcibex('high-sd')
 
-# Tidy result files
-tidied_results_high_sd <- results_high_sd %>%
-  filter(PennElementName == "side-by-side" | PennElementName == "selection") %>%
-  select(ID, group, item, condition, PennElementName, Value, EventTime) %>%
-  group_by(ID, item) %>%
-  mutate(event = case_when(PennElementName == "side-by-side" ~ "canvas_time",
-                           PennElementName == "selection" ~ "selection_time"),
-         selection = case_when("singular" %in% Value ~ "singular",
-                               "plural" %in% Value ~ "plural",
-                               FALSE ~ NA_character_),
-         EventTime = if_else(EventTime == "Never", NA_real_, suppressWarnings(as.numeric(EventTime)))) %>%
-  ungroup() %>%
-  select(-PennElementName, -Value) %>%
-  pivot_wider(names_from = event, values_from = EventTime)
+results_high_sd
 
-tidied_results_low_sd <- results_low_sd %>%
-  filter(PennElementName == "side-by-side" | PennElementName == "selection") %>%
-  select(ID, group, item, condition, PennElementName, Value, EventTime) %>%
-  group_by(ID, item) %>%
-  mutate(event = case_when(PennElementName == "side-by-side" ~ "canvas_time",
-                           PennElementName == "selection" ~ "selection_time"),
-         selection = case_when("singular" %in% Value ~ "singular",
-                               "plural" %in% Value ~ "plural",
-                               FALSE ~ NA_character_),
-         EventTime = if_else(EventTime == "Never", NA_real_, suppressWarnings(as.numeric(EventTime)))) %>%
-  ungroup() %>%
-  select(-PennElementName, -Value) %>%
-  pivot_wider(names_from = event, values_from = EventTime)
+results_low_sd <- read.pcibex("results_low_sd.csv") %>% format.pcibex('low-sd')
+
+results_low_sd
 
 
 ```
-
