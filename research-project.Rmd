@@ -61,8 +61,16 @@ format.pcibex <- function(results, group) {
     rename(Subject = MD5.hash.of.participant.s.IP.address, ItemNumber = Order.number.of.item, ItemType = Label, Age = age, Gender = gender, Occupation = occupation, Nationality = nationality) %>% 
     select(-Results.reception.time, -Controller.name, -Inner.element.number, -Latin.Square.Group, -Comments) %>% 
     filter(ItemType %in% c('personal-info', 'experiment', 'manipulation-check', 'sd-bias')) %>% 
-    filter(PennElementType != 'Timer') %>% 
-    mutate(group = group)
+    filter(PennElementType != 'Timer') %>%
+    filter(Value != 'End' | ItemType == 'experiment') %>%
+    filter(Value != 'Start' | ItemType %in% c('experiment', 'personal-info')) %>%
+    mutate(group = group) %>% 
+    mutate(Question = ifelse(ItemType == 'experiment', Age, NA), Age = ifelse(ItemType == 'personal-info', Age, NA)) %>% 
+    mutate(QuestionType = ifelse(ItemType == 'experiment', Gender, NA), Gender = ifelse(ItemType == 'personal-info', Gender, NA)) %>% 
+    mutate(Occupation = ifelse(ItemType == 'personal-info', Occupation, NA), Nationality = ifelse(ItemType == 'personal-info', Nationality, NA)) %>% 
+    group_by(Subject) %>%
+    mutate(Age = first(Age), Gender = first(Gender), Occupation = first(Occupation), Nationality = first(Nationality)) %>%
+    ungroup()
   
   return(formatted_results)
 }
