@@ -1,0 +1,99 @@
+---
+title: "research-project"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## Loading necessary libraries
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(broom)
+library(lme4)
+library(boot)
+library(ordinal)
+```
+
+## Research Project
+
+### Format Data
+
+```{r}
+# Set working directory to source file location
+
+# Documentation function to read in PCIbex Farm results files (source: https://doc.pcibex.net/advanced-tutorial/12_examining-data.html#reading-in-results)
+read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols){cols[cols==col]<-paste(col,"Ibex",sep=".");return(cols)}) {
+  n.cols <- max(count.fields(filepath,sep=",",quote=NULL),na.rm=TRUE)
+  if (auto.colnames){
+    cols <- c()
+    con <- file(filepath, "r")
+    while ( TRUE ) {
+      line <- readLines(con, n = 1, warn=FALSE)
+      if ( length(line) == 0) {
+        break
+      }
+      m <- regmatches(line,regexec("^# (\\d+)\\. (.+)\\.$",line))[[1]]
+      if (length(m) == 3) {
+        index <- as.numeric(m[2])
+        value <- m[3]
+        if (is.function(fun.col)){
+         cols <- fun.col(value,cols)
+        }
+        cols[index] <- value
+        if (index == n.cols){
+          break
+        }
+      }
+    }
+    close(con)
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=cols))
+  }
+  else{
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=seq(1:n.cols)))
+  }
+}
+
+# Function to format PCIbex Farm results files
+format.pcibex <- function(results) {
+  formatted-results <- results
+}
+
+# Read in result files
+results_high_sd <- read.pcibex("results_high_sd.csv")
+results_low_sd <- read.pcibex("results_low_sd.csv")
+
+# Tidy result files
+tidied_results_high_sd <- results_high_sd %>%
+  filter(PennElementName == "side-by-side" | PennElementName == "selection") %>%
+  select(ID, group, item, condition, PennElementName, Value, EventTime) %>%
+  group_by(ID, item) %>%
+  mutate(event = case_when(PennElementName == "side-by-side" ~ "canvas_time",
+                           PennElementName == "selection" ~ "selection_time"),
+         selection = case_when("singular" %in% Value ~ "singular",
+                               "plural" %in% Value ~ "plural",
+                               FALSE ~ NA_character_),
+         EventTime = if_else(EventTime == "Never", NA_real_, suppressWarnings(as.numeric(EventTime)))) %>%
+  ungroup() %>%
+  select(-PennElementName, -Value) %>%
+  pivot_wider(names_from = event, values_from = EventTime)
+
+tidied_results_low_sd <- results_low_sd %>%
+  filter(PennElementName == "side-by-side" | PennElementName == "selection") %>%
+  select(ID, group, item, condition, PennElementName, Value, EventTime) %>%
+  group_by(ID, item) %>%
+  mutate(event = case_when(PennElementName == "side-by-side" ~ "canvas_time",
+                           PennElementName == "selection" ~ "selection_time"),
+         selection = case_when("singular" %in% Value ~ "singular",
+                               "plural" %in% Value ~ "plural",
+                               FALSE ~ NA_character_),
+         EventTime = if_else(EventTime == "Never", NA_real_, suppressWarnings(as.numeric(EventTime)))) %>%
+  ungroup() %>%
+  select(-PennElementName, -Value) %>%
+  pivot_wider(names_from = event, values_from = EventTime)
+
+
+```
+
