@@ -220,6 +220,173 @@ results <- results %>%
 results
 ```
 
+### Calculating The Mouse speed
+
+Formatting the data in the right way
+
+In order to calculate the mouse speed, we are following the approach suggested by PCIBEX for mouse tracking studies (source: <https://www.pcibex.net/wiki/mousetracker-element/>). In short, we first create three new columns to our dataframe (timestamps, xpos, ypos). These will store, respectively, the time and the position of the mouse on the x and y axis. Based on these new columns, we than calculate the mouse speed.
+
+```{r}
+# Our dataframe 'results' has a column 'value' where the mouse-tracking data are stored
+
+timestamps_get_response <- vector()   # Vector to store timestamp
+xpos_get_response <- vector()         # Vector to store posizioni x
+ypos_get_response <- vector()         # Vector to store posizioni y
+
+# For each row of the dataframe
+for (row in 1:nrow(results)) {
+  
+  # Initialize the vector 
+  
+    pos <- data.frame(time=numeric(0), x=numeric(0), y=numeric(0))
+  
+  
+  # Check if the row's 'Parameter' column is "Move"
+  if (results[row, "Parameter"] == "Move") {
+    
+    time <- 0  # Initialize time
+    stream <- as.character(results[row, "Value"])  # Get the stream of data from 'Value' column
+    
+    # Extract x and y positions from the data stream
+    pos <- data.frame(
+      time = c(time),
+      x = as.numeric(gsub("^x(\\d+)y.+$", "\\1", stream)),
+      y = as.numeric(gsub("^.+y(\\d+)w.+$", "\\1", stream))
+    )
+    
+    ptime <- time  # Previous time
+    px <- pos[1, "x"]  # Initial x position
+    py <- pos[1, "y"]  # Initial y position
+    
+    # Loop through positions in the stream (split by 't')
+    for (s in (strsplit(stream, 't')[[1]][-1])) {
+      # Extract and separate coordinates and time from the stream
+      row <- strsplit(gsub("^(\\d+)([+-]\\d+)([+-]\\d+)$", "\\1 \\2 \\3", s), ' ')
+      
+      # Calculate new time and new positions
+      ntime <- as.numeric(ptime + as.numeric(row[[1]][1]))
+      nx <- as.numeric(px + as.numeric(row[[1]][2]))
+      ny <- as.numeric(py + as.numeric(row[[1]][3]))
+      
+      # Append the data to the position dataframe
+      pos <- rbind(pos, data.frame(time = ntime, x = nx, y = ny))
+      
+      # Update previous time and position
+      ptime <- ntime
+      px <- nx
+      py <- ny
+    }
+  }
+  
+  # Create the format for timestamps and positions
+  times <- toString(pos[["time"]])
+  timestamp <- paste("[", times, "]", sep = "")
+  timestamps_get_response <- c(timestamps_get_response, timestamp)
+  
+  xpos <- toString(pos[["x"]])
+  xpos_str <- paste("[", xpos, "]", sep = "")
+  xpos_get_response <- c(xpos_get_response, xpos_str)
+  
+  ypos <- toString(pos[["y"]])
+  ypos_str <- paste("[", ypos, "]", sep = "")
+  ypos_get_response <- c(ypos_get_response, ypos_str)
+}
+
+# Add the new columns to the original dataframe
+results$timestamps <- timestamps_get_response
+results$xpos <- xpos_get_response
+results$ypos <- ypos_get_response
+
+# Print the modified dataframe
+print(results)
+```
+
+### Constructing functions and applying them
+
+We need to calculate the mose-speed between each timestamp and the following one. Then we will do an average for each participant.
+
+```{r}
+# Constructing the functions that we need 
+
+# The first function is only to turn the chr in numerics 
+
+parse_vector <- function(str) {
+  as.numeric(unlist(strsplit(gsub("\\[|\\]", "", str), ", ")))
+}
+
+
+# Caluclating the mouse speed betweeen each timestamp and the following one
+
+calculate_distance <- function(x1, x2, y1, y2) {
+  
+  distance <- sqrt((x2 - x1)^2 + (y2 - y1)^2)
+  return (distance)
+}
+
+calculate_speed <- function(x1, x2, y1, y2, t1, t2) {
+  # First we check that time 2 is bigger than time 1
+  if (t2 > t1) {
+    speed <- calculate_distance(x1, x2, y1, y2)/(t2-t1)
+    return(speed)
+  } 
+  # Otherwise we return a NA value
+  else {
+    return(NA)
+  }
+}
+
+calculate_average_velocity <- function(results) {
+  
+  results$AvgMouseSpeed <- NA  # Initialize the column
+  
+  for (i in 1:nrow(results)) {
+    
+    # Process only rows where Parameter == "Move"
+    if (results[i, "Parameter"] == "Move") {
+      
+      # Transform strings into numeric vectors
+      timestamps <- parse_vector(results[i, "timestamps"])
+      xpos <- parse_vector(results[i, "xpos"])
+      ypos <- parse_vector(results[i, "ypos"])
+      
+      velocities <- c()  # Initialized an empty vector to store the velocities
+      
+      for (j in 1:(length(timestamps) - 1)) {
+        speed <- calculate_speed(xpos[j], xpos[j+1], ypos[j], ypos[j+1], timestamps[j], timestamps[j+1])
+        velocities <- c(velocities, speed)
+      }
+      
+      # Assign average speed for the current row
+      results$AvgMouseSpeed[i] <- mean(velocities, na.rm = TRUE)
+    }
+  }
+  
+  return(results)  
+}
+
+
+# Applying the functions: I will add a new column 
+
+results <- calculate_average_velocity(results)
+
+results <- select(results, -timestamps, -xpos, -ypos)
+
+print(results)
+
+
+# Calculating the mean Mouse speed per partecipant
+participant_avg_speed <- results %>%
+  group_by(Subject) %>%  # Grouping
+  summarize(SubjectMouseSpeed = mean(AvgMouseSpeed, na.rm = TRUE))  # Do the mean ignoring the NAs
+
+# Join this column to the original dataset
+results <- results %>%
+  left_join(participant_avg_speed, by = "Subject")
+
+
+print(results)
+```
+
 ### Control Questions Check
 
 ```{r}
@@ -262,3 +429,24 @@ results <- results %>%
 results
 ```
 
+### Eliminating participants too far from the threshold
+
+```{r}
+# Filtering the dataset for the rows that I need 
+move_data <- results[results$Parameter == "Move", ]
+
+# Calculating Median (M) e MAD
+M <- median(move_data$SubjectMouseSpeed, na.rm = TRUE)  # Usa na.rm = TRUE per ignorare NA
+MAD <- mad(move_data$SubjectMouseSpeed, constant = 1, na.rm = TRUE)
+
+# Define a threashold 
+threshold <- M + 3 * MAD
+
+# Get rid of people too deviated 
+outlier_subjects <- results$Subject[!is.na(results$SubjectMouseSpeed) & results$SubjectMouseSpeed > threshold]
+
+filtered_results <- results[!results$Subject %in% outlier_subjects, ]
+
+
+print(filtered_results)
+```
