@@ -215,9 +215,49 @@ results <- results %>%
   # 3. Add answer switches count to results
   left_join(results_answer_switches, by = c("Subject", "Question")) %>%
   # 4. Rename new column to AnswerSwitches
-  rename(AnswerSwitches = n) %>% 
-  # 5. Remove experiment rows marked as "Choice" (they are now irrelevant)
-  filter(Parameter != "Choice" | ItemType != "experiment")
+  rename(AnswerSwitches = n)
+
+results
+```
+
+### Control Questions Check
+
+```{r}
+# Check if any subjects failed to answer the control questions correctly:
+results_positive_control_question <- results %>%
+  # 1. Filter for positive control question responses
+  filter(QuestionType == 'control' & Parameter == "Choice" & Question == "How often do you send and receive messages or emails?") 
+
+results_negative_control_question <- results %>%
+  # 1. Filter for negative control question responses
+  filter(QuestionType == 'control' & Parameter == "Choice" & Question == "How often do you publicly share your online banking credentials on social media or public forums?") 
+
+# Suspicious (i.e., failed) responses for control questions:
+negative_choices <- c("Never", "Few times")
+positive_choices <- c("Sometimes", "Often", "Really often")
+
+# Check if any subjects failed to answer the control questions correctly:
+results_failed_positive <- results %>%
+  # 1. Filter for failed positive control question responses
+  filter(QuestionType == "control", Parameter == "Choice", Question == "How often do you send and receive messages or emails?", Value %in% negative_choices) %>% 
+  # 2. Pull problematic subjects
+  pull(Subject)
+
+results_failed_negative <- results %>%
+  # 1. Filter for failed negative control question responses
+  filter(QuestionType == "control", Parameter == "Choice", Question == "How often do you publicly share your online banking credentials on social media or public forums?", Value %in% positive_choices) %>% 
+  # 2. Pull problematic subjects
+  pull(Subject)
+  
+results_failed <- union(results_failed_positive, results_failed_negative)
+
+results_failed_subjects <- results %>% 
+  filter(Subject %in% results_failed)
+
+results_failed_subjects
+
+results <- results %>% 
+  filter(!Subject %in% results_failed)
 
 results
 ```
