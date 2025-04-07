@@ -468,10 +468,12 @@ threshold <- M + 3 * MAD
 # Get rid of people too deviated 
 outlier_subjects <- results$Subject[!is.na(results$SubjectMouseSpeed) & results$SubjectMouseSpeed > threshold]
 
-filtered_results <- results[!results$Subject %in% outlier_subjects, ]
+outlier_subjects
+
+results <- results[!results$Subject %in% outlier_subjects, ]
 
 
-print(filtered_results)
+print(results)
 
 # Then for the RT
 
@@ -489,9 +491,11 @@ threshold <- M + 3 * MAD
 # Get rid of people too deviated 
 outlier_subjects <- results$Subject[!is.na(results$SubjectMeanRT) & results$SubjectMeanRT > threshold]
 
-filtered_results <- results[!results$Subject %in% outlier_subjects, ]
+outlier_subjects
 
-print(filtered_results)
+results <- results[!results$Subject %in% outlier_subjects, ]
+
+print(results)
 
 # Then for the AnswerSwitches
 
@@ -509,14 +513,16 @@ threshold <- M + 3 * MAD
 # Get rid of people too deviated 
 outlier_subjects <- results$Subject[!is.na(results$SubjectMeanAS) & results$SubjectMeanAS > threshold]
 
-filtered_results <- results[!results$Subject %in% outlier_subjects, ]
+outlier_subjects
 
-print(filtered_results)
+results <- results[!results$Subject %in% outlier_subjects, ]
+
+print(results)
 
 
 ```
 
-### Controlling the Manipulation Check 
+### Controlling the Manipulation Check
 
 ```{r}
 
