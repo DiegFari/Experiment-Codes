@@ -198,16 +198,6 @@ results <- results %>%
   # 6. Remove irrelevant columns
   select(-Start, -End, -EventTime)
 
-# Calculating the mean rt per subject
-subject_mean_rt <- results %>%
-  mutate(RT = as.numeric(RT)) %>%  
-  group_by(Subject) %>%
-  summarize(SubjectMeanRT = mean(RT, na.rm = TRUE))
-
-# Add this new column to the original dataset
-results <- results %>%
-  left_join(subject_mean_rt, by = "Subject")
-
 results
 ```
 
@@ -227,15 +217,15 @@ results <- results %>%
   # 4. Rename new column to AnswerSwitches
   rename(AnswerSwitches = n)
 
-# Calculating the mean Mouse speed per partecipant
-SubjectMeanAS <- results %>%
+# Calculating the mean answer switches per subject
+subject_mean_as <- results %>%
   mutate(AnswerSwitches = as.numeric(AnswerSwitches)) %>%  
-  group_by(Subject) %>%  # Grouping
-  summarize(SubjectMeanAS = mean(AnswerSwitches, na.rm = TRUE))  # Do the mean ignoring the NAs
+  group_by(Subject) %>% 
+  summarize(SubjectMeanAS = mean(AnswerSwitches, na.rm = TRUE))
 
 # Join this column to the original dataset
 results <- results %>%
-  left_join(SubjectMeanAS, by = "Subject")
+  left_join(subject_mean_as, by = "Subject")
 
 results
 ```
@@ -246,7 +236,7 @@ results
 
 In order to calculate the mouse speed, we are following the approach suggested by PCIBEX for mouse tracking studies (source: <https://www.pcibex.net/wiki/mousetracker-element/>). In short, we first create three new columns to our dataframe (timestamps, xpos, ypos). These will store, respectively, the time and the position of the mouse on the x and y axis. Based on these new columns, we than calculate the mouse speed.
 
-```{r}
+```{r format-mouse-data, cache=TRUE}
 # Our dataframe 'results' has a column 'Value' where the mouse-tracking data are stored
 
 timestamps_get_response <- vector()   # Vector to store timestamp
@@ -383,17 +373,6 @@ results <- calculate_average_velocity(results)
 results <- select(results, -timestamps, -xpos, -ypos)
 
 results
-
-# Calculate the mean mouse speed per participant
-participant_avg_speed <- results %>%
-  group_by(Subject) %>%
-  summarize(SubjectMouseSpeed = mean(AvgMouseSpeed, na.rm = TRUE))
-
-# Add a new column to the original dataset with the mean mouse speeds
-results <- results %>%
-  left_join(participant_avg_speed, by = "Subject")
-
-results
 ```
 
 ### Control Questions Check
@@ -445,20 +424,26 @@ results
 ```{r}
 # Fisrt, mouse-speed
 
-# Filtering the dataset for the rows needed
-move_data <- results[results$Parameter == "Move", ]
+# Filtering the dataset for the rows needed and calculating the mean average mouse speed:
+subject_mean_mouse_speed <- results %>%
+  filter(ItemType == "experiment") %>%
+  select(Subject, ItemNumber, AvgMouseSpeed) %>%
+  distinct() %>% 
+  filter(!is.na(AvgMouseSpeed)) %>% 
+  group_by(Subject) %>%
+  summarize(AvgMouseSpeedMeanRT = mean(AvgMouseSpeed, na.rm = TRUE))
 
 # Calculating Median (M) and MAD
-M <- median(move_data$SubjectMouseSpeed, na.rm = TRUE)
-MAD <- mad(move_data$SubjectMouseSpeed, constant = 1, na.rm = TRUE)
+M <- median(subject_mean_mouse_speed$AvgMouseSpeedMeanRT, na.rm = TRUE)
+MAD <- mad(subject_mean_mouse_speed$AvgMouseSpeedMeanRT, constant = 1, na.rm = TRUE)
 
 # Defining the threshold
 threshold <- M + 3 * MAD
 
 # Filtering subjects out of the threshold
-outlier_subjects <- results$Subject[!is.na(results$SubjectMouseSpeed) & results$SubjectMouseSpeed > threshold]
+outlier_subjects <- subject_mean_mouse_speed$Subject[!is.na(subject_mean_mouse_speed$AvgMouseSpeedMeanRT) & subject_mean_mouse_speed$AvgMouseSpeedMeanRT > threshold]
 
-outlier_subject_rows <- results[results$Subject %in% outlier_subjects, ]
+outlier_subject_rows <- subject_mean_mouse_speed[subject_mean_mouse_speed$Subject %in% outlier_subjects, ]
 
 outlier_subject_rows
 
@@ -466,21 +451,26 @@ results <- results[!results$Subject %in% outlier_subjects, ]
 
 # Second, RT
 
-# Filtering the dataset for the rows needed
-rt_data <- results %>%
-  distinct(Subject, ItemNumber, .keep_all = TRUE)
+# Filtering the dataset for the rows needed and calculating the average RT:
+subject_mean_rt <- results %>%
+  filter(ItemType == "experiment") %>%
+  select(Subject, ItemNumber, RT) %>%
+  distinct() %>% 
+  mutate(RT = as.numeric(RT)) %>%  
+  group_by(Subject) %>%
+  summarize(SubjectMeanRT = mean(RT, na.rm = TRUE))
 
 # Calculating Median (M) and MAD
-M <- median(move_data$SubjectMeanRT, na.rm = TRUE)
-MAD <- mad(move_data$SubjectMeanRT, constant = 1, na.rm = TRUE)
+M <- median(subject_mean_rt$SubjectMeanRT, na.rm = TRUE)
+MAD <- mad(subject_mean_rt$SubjectMeanRT, constant = 1, na.rm = TRUE)
 
 # Defining the threshold
 threshold <- M + 3 * MAD
 
 # Filtering subjects out of the threshold
-outlier_subjects <- results$Subject[!is.na(results$SubjectMeanRT) & results$SubjectMeanRT > threshold]
+outlier_subjects <- subject_mean_rt$Subject[!is.na(subject_mean_rt$SubjectMeanRT) & subject_mean_rt$SubjectMeanRT > threshold]
 
-outlier_subject_rows <- results[results$Subject %in% outlier_subjects, ]
+outlier_subject_rows <- subject_mean_rt[subject_mean_rt$Subject %in% outlier_subjects, ]
 
 outlier_subject_rows
 
@@ -489,20 +479,24 @@ results <- results[!results$Subject %in% outlier_subjects, ]
 # Third, answer switches
 
 # Filtering the dataset for the rows needed
-ASdata <- results %>%
-  distinct(Subject, ItemNumber, .keep_all = TRUE)
+subject_mean_as <- results %>%
+  filter(ItemType == "experiment") %>%
+  select(Subject, ItemNumber, AnswerSwitches) %>%
+  distinct() %>%
+  group_by(Subject) %>%
+  summarize(SubjectMeanAS = mean(AnswerSwitches, na.rm = TRUE))
 
 # Calculating Median (M) and MAD
-M <- median(move_data$SubjectMeanAS, na.rm = TRUE)
-MAD <- mad(move_data$SubjectMeanAS, constant = 1, na.rm = TRUE)
+M <- median(subject_mean_as$SubjectMeanAS, na.rm = TRUE)
+MAD <- mad(subject_mean_as$SubjectMeanAS, constant = 1, na.rm = TRUE)
 
 # Defining the threshold
 threshold <- M + 3 * MAD
 
 # Filtering subjects out of the threshold
-outlier_subjects <- results$Subject[!is.na(results$SubjectMeanAS) & results$SubjectMeanAS > threshold]
+outlier_subjects <- subject_mean_as$Subject[!is.na(subject_mean_as$SubjectMeanAS) & subject_mean_as$SubjectMeanAS > threshold]
 
-outlier_subject_rows <- results[results$Subject %in% outlier_subjects, ]
+outlier_subject_rows <- subject_mean_as[subject_mean_as$Subject %in% outlier_subjects, ]
 
 outlier_subject_rows
 
@@ -577,18 +571,97 @@ sd_bias_t_test
 ### Constructing models
 
 ```{r}
-m1 <- lmer(SubjectMouseSpeed ~ Group + (1 | Subject),
-     data = results)
+# We get the avg mouse speed per subject per experiment question
+subject_group_avg_mouse_speed <- results %>%
+  filter(ItemType == "experiment") %>%
+  select(Subject, Group, ItemNumber, AvgMouseSpeed) %>%
+  distinct() %>%
+  filter(!is.na(AvgMouseSpeed))
+
+subject_group_avg_mouse_speed
+
+# We graph avg mouse speed to check best transformation for normal distribution:
+ggplot(subject_group_avg_mouse_speed, aes(x = log(AvgMouseSpeed))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Log AMS (Density Plot)", x = "Log AMS", y = "Density")
+
+ggplot(subject_group_avg_mouse_speed, aes(x = sqrt(AvgMouseSpeed))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Sqrt AMS (Density Plot)", x = "Sqrt AMS", y = "Density")
+
+ggplot(subject_group_avg_mouse_speed, aes(x = (AvgMouseSpeed)^(1/3))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Cubed AMS (Density Plot)", x = "Cubed AMS", y = "Density")
+
+ggplot(subject_group_avg_mouse_speed, aes(x = (1/AvgMouseSpeed))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Inverse AMS (Density Plot)", x = "Inverse AMS", y = "Density")
+
+# Log transformation yields the best fit for normal distribution
+m1 <- lmer(log(AvgMouseSpeed) ~ Group + (1 | Subject) + (1 | ItemNumber),
+     data = subject_group_avg_mouse_speed)
 
 summary(m1)
 
-m2 <- lmer(SubjectMeanRT ~ Group + (1 | Subject),
-     data = results)
+hist(residuals(m1), main="Residuals of the model for AMS")
+plot(density(residuals(m1)), main="Residuals of the model for AMS")
+qqnorm(residuals(m1), main="Residuals of the model for AMS")
+qqline(residuals(m1))
+
+# We get the RT per subject per experiment question
+subject_group_rt <- results %>%
+  filter(ItemType == "experiment") %>%
+  select(Subject, Group, ItemNumber, RT) %>%
+  distinct() %>%
+  mutate(RT = as.numeric(RT))
+
+subject_group_rt
+
+# We graph RT to check best transformation for normal distribution:
+ggplot(subject_group_rt, aes(x = log(RT))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Log RT (Density Plot)", x = "Log RT", y = "Density")
+
+ggplot(subject_group_rt, aes(x = sqrt(RT))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Sqrt RT (Density Plot)", x = "Sqrt RT", y = "Density")
+
+ggplot(subject_group_rt, aes(x = (RT)^(1/3))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Cubed RT (Density Plot)", x = "Cubed RT", y = "Density")
+
+ggplot(subject_group_rt, aes(x = (1/RT))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Inverse RT (Density Plot)", x = "Inverse RT", y = "Density")
+
+m2 <- lmer(log(RT) ~ Group + (1 | Subject) + (1 | ItemNumber),
+     data = subject_group_rt)
 
 summary(m2)
 
-m3 <- lmer(SubjectMeanAS ~ Group + (1 | Subject),
-     data = results)
+hist(residuals(m2), main="Residuals of the model for log RT")
+plot(density(residuals(m2)), main="Residuals of the model for log RT")
+qqnorm(residuals(m2), main="Residuals of the model for log RT") 
+qqline(residuals(m2))
+
+subject_group_as <- results %>%
+  filter(ItemType == "experiment") %>%
+  select(Subject, Group, ItemNumber, AnswerSwitches) %>%
+  distinct()
+
+subject_group_as
+
+m3 <- glmer(AnswerSwitches ~ Group + (1 | Subject + ItemNumber),
+     data = subject_group_as,
+     family = poisson)
 
 summary(m3)
 ```
