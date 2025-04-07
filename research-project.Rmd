@@ -134,7 +134,7 @@ occupation_summary <- results %>%
   # 1. Select only one value per subject 
   distinct(Subject, Occupation) %>% 
   # 2. Prepare data for comparison 
-  mutate(Occupation = tolower(Occupation), Occupation = case_when(grepl("student", Occupation) ~ "student", grepl("nini", Occupation) ~ "null", TRUE ~ Occupation)) %>%
+  mutate(Occupation = tolower(Occupation), Occupation = case_when(grepl("student", Occupation) ~ "student", TRUE ~ "worker")) %>%
   # 3. Calculate percentage and sort
   group_by(Occupation) %>%
   summarize(
@@ -150,7 +150,7 @@ nationality_summary <- results %>%
   # 1. Select only one value per subject 
   distinct(Subject, Nationality) %>% 
   # 2. Prepare data for comparison 
-  mutate(Nationality = tolower(Nationality), Nationality = case_when(grepl("italian", Nationality) ~ "italian", grepl("nl", Nationality) ~ "dutch", grepl("peru", Nationality) ~ "peruvian", TRUE ~ Nationality)) %>% 
+  mutate(Nationality = tolower(Nationality), Nationality = case_when(grepl("italian", Nationality) ~ "italian", grepl("italien", Nationality) ~ "italian", grepl("italy", Nationality) ~ "italian", TRUE ~ "other")) %>% 
   # 3. Calculate percentage and sort
   group_by(Nationality) %>%
   summarize(
@@ -198,15 +198,15 @@ results <- results %>%
   # 6. Remove irrelevant columns
   select(-Start, -End, -EventTime)
 
-# Calculating the mean Mouse speed per partecipant
-  SubjectMeanRT <- results %>%
+# Calculating the mean rt per subject
+subject_mean_rt <- results %>%
   mutate(RT = as.numeric(RT)) %>%  
-  group_by(Subject) %>%  # Grouping
-  summarize(SubjectMeanRT = mean(RT, na.rm = TRUE))  # Do the mean ignoring the NAs
+  group_by(Subject) %>%
+  summarize(SubjectMeanRT = mean(RT, na.rm = TRUE))
 
-# Join this column to the original dataset
+# Add this new column to the original dataset
 results <- results %>%
-  left_join(SubjectMeanRT, by = "Subject")
+  left_join(subject_mean_rt, by = "Subject")
 
 results
 ```
@@ -242,30 +242,26 @@ results
 
 ### Mouse Speed Calculation
 
-#### Formatting the data in the right way
+#### Formatting the mouse data
 
 In order to calculate the mouse speed, we are following the approach suggested by PCIBEX for mouse tracking studies (source: <https://www.pcibex.net/wiki/mousetracker-element/>). In short, we first create three new columns to our dataframe (timestamps, xpos, ypos). These will store, respectively, the time and the position of the mouse on the x and y axis. Based on these new columns, we than calculate the mouse speed.
 
 ```{r}
-# Our dataframe 'results' has a column 'value' where the mouse-tracking data are stored
+# Our dataframe 'results' has a column 'Value' where the mouse-tracking data are stored
 
 timestamps_get_response <- vector()   # Vector to store timestamp
-xpos_get_response <- vector()         # Vector to store posizioni x
-ypos_get_response <- vector()         # Vector to store posizioni y
+xpos_get_response <- vector()         # Vector to store pos x
+ypos_get_response <- vector()         # Vector to store pos y
 
 # For each row of the dataframe
 for (row in 1:nrow(results)) {
-  
-  # Initialize the vector 
-  
-    pos <- data.frame(time=numeric(0), x=numeric(0), y=numeric(0))
-  
+  pos <- data.frame(time=numeric(0), x=numeric(0), y=numeric(0)) # Initialize the vector
   
   # Check if the row's 'Parameter' column is "Move"
   if (results[row, "Parameter"] == "Move") {
     
     time <- 0  # Initialize time
-    stream <- as.character(results[row, "Value"])  # Get the stream of data from 'Value' column
+    stream <- as.character(results[row, "Value"]) # Get the stream of data from 'Value' column
     
     # Extract x and y positions from the data stream
     pos <- data.frame(
@@ -274,9 +270,9 @@ for (row in 1:nrow(results)) {
       y = as.numeric(gsub("^.+y(\\d+)w.+$", "\\1", stream))
     )
     
-    ptime <- time  # Previous time
-    px <- pos[1, "x"]  # Initial x position
-    py <- pos[1, "y"]  # Initial y position
+    ptime <- time # Previous time
+    px <- pos[1, "x"] # Initial x position
+    py <- pos[1, "y"] # Initial y position
     
     # Loop through positions in the stream (split by 't')
     for (s in (strsplit(stream, 't')[[1]][-1])) {
@@ -317,34 +313,31 @@ results$timestamps <- timestamps_get_response
 results$xpos <- xpos_get_response
 results$ypos <- ypos_get_response
 
-# Print the modified dataframe
-print(results)
+results
 ```
 
-#### Constructing functions and applying them
+#### Calculating the mouse speed
 
-We need to calculate the mose-speed between each timestamp and the following one. Then we will do an average for each participant.
+We need to calculate the mouse-speed between each time stamp. Then we calculate an average for each participant.
 
 ```{r}
 # Constructing the functions that we need 
 
-# The first function is only to turn the chr in numerics 
-
+# This function turns chr values into numerics
 parse_vector <- function(str) {
   as.numeric(unlist(strsplit(gsub("\\[|\\]", "", str), ", ")))
 }
 
 
-# Caluclating the mouse speed betweeen each timestamp and the following one
-
+# This function calculates the distance covered between two points
 calculate_distance <- function(x1, x2, y1, y2) {
-  
   distance <- sqrt((x2 - x1)^2 + (y2 - y1)^2)
   return (distance)
 }
 
+# This function calculates the velocity between two points
 calculate_speed <- function(x1, x2, y1, y2, t1, t2) {
-  # First we check that time 2 is bigger than time 1
+  # First we check that t2 is bigger than t1
   if (t2 > t1) {
     speed <- calculate_distance(x1, x2, y1, y2)/(t2-t1)
     return(speed)
@@ -355,15 +348,13 @@ calculate_speed <- function(x1, x2, y1, y2, t1, t2) {
   }
 }
 
+# This function calculates the average velocity for every "Move" row in the results
 calculate_average_velocity <- function(results) {
-  
   results$AvgMouseSpeed <- NA  # Initialize the column
   
   for (i in 1:nrow(results)) {
-    
     # Process only rows where Parameter == "Move"
     if (results[i, "Parameter"] == "Move") {
-      
       # Transform strings into numeric vectors
       timestamps <- parse_vector(results[i, "timestamps"])
       xpos <- parse_vector(results[i, "xpos"])
@@ -385,26 +376,24 @@ calculate_average_velocity <- function(results) {
 }
 
 
-# Applying the functions: I will add a new column 
-
+# Add the average velocities back to results
 results <- calculate_average_velocity(results)
 
+# Remove unnecessary data
 results <- select(results, -timestamps, -xpos, -ypos)
 
-print(results)
+results
 
-
-# Calculating the mean Mouse speed per partecipant
+# Calculate the mean mouse speed per participant
 participant_avg_speed <- results %>%
-  group_by(Subject) %>%  # Grouping
-  summarize(SubjectMouseSpeed = mean(AvgMouseSpeed, na.rm = TRUE))  # Do the mean ignoring the NAs
+  group_by(Subject) %>%
+  summarize(SubjectMouseSpeed = mean(AvgMouseSpeed, na.rm = TRUE))
 
-# Join this column to the original dataset
+# Add a new column to the original dataset with the mean mouse speeds
 results <- results %>%
   left_join(participant_avg_speed, by = "Subject")
 
-
-print(results)
+results
 ```
 
 ### Control Questions Check
@@ -438,6 +427,8 @@ results_failed_negative <- results %>%
   
 results_failed <- union(results_failed_positive, results_failed_negative)
 
+results_failed
+
 results_failed_subjects <- results %>% 
   filter(Subject %in% results_failed)
 
@@ -449,83 +440,155 @@ results <- results %>%
 results
 ```
 
-### Eliminating participants too far from the threshold in all the three metrics measured
+### Remove subjects too far from the threshold in all the three metrics measured
 
 ```{r}
+# Fisrt, mouse-speed
 
-# Fisrt, we do it for the mouse-speed
-
-# Filtering the dataset for the rows that I need 
+# Filtering the dataset for the rows needed
 move_data <- results[results$Parameter == "Move", ]
 
-# Calculating Median (M) e MAD
-M <- median(move_data$SubjectMouseSpeed, na.rm = TRUE)  # Usa na.rm = TRUE per ignorare NA
+# Calculating Median (M) and MAD
+M <- median(move_data$SubjectMouseSpeed, na.rm = TRUE)
 MAD <- mad(move_data$SubjectMouseSpeed, constant = 1, na.rm = TRUE)
 
-# Define a threashold 
+# Defining the threshold
 threshold <- M + 3 * MAD
 
-# Get rid of people too deviated 
+# Filtering subjects out of the threshold
 outlier_subjects <- results$Subject[!is.na(results$SubjectMouseSpeed) & results$SubjectMouseSpeed > threshold]
 
-outlier_subjects
+outlier_subject_rows <- results[results$Subject %in% outlier_subjects, ]
+
+outlier_subject_rows
 
 results <- results[!results$Subject %in% outlier_subjects, ]
 
+# Second, RT
 
-print(results)
-
-# Then for the RT
-
-#Filtering the data by the function distinct() with Subject and ItemNumber as parameters
-RTdata <- results %>%
+# Filtering the dataset for the rows needed
+rt_data <- results %>%
   distinct(Subject, ItemNumber, .keep_all = TRUE)
 
-# Calculating Median (M) e MAD
-M <- median(move_data$SubjectMeanRT, na.rm = TRUE)  # Usa na.rm = TRUE per ignorare NA
+# Calculating Median (M) and MAD
+M <- median(move_data$SubjectMeanRT, na.rm = TRUE)
 MAD <- mad(move_data$SubjectMeanRT, constant = 1, na.rm = TRUE)
 
-#Recalculating the threshold
+# Defining the threshold
 threshold <- M + 3 * MAD
 
-# Get rid of people too deviated 
+# Filtering subjects out of the threshold
 outlier_subjects <- results$Subject[!is.na(results$SubjectMeanRT) & results$SubjectMeanRT > threshold]
 
-outlier_subjects
+outlier_subject_rows <- results[results$Subject %in% outlier_subjects, ]
+
+outlier_subject_rows
 
 results <- results[!results$Subject %in% outlier_subjects, ]
 
-print(results)
+# Third, answer switches
 
-# Then for the AnswerSwitches
-
-#Filtering the data by the function distinct() with Subject and ItemNumber as parameters
+# Filtering the dataset for the rows needed
 ASdata <- results %>%
   distinct(Subject, ItemNumber, .keep_all = TRUE)
 
-# Calculating Median (M) e MAD
-M <- median(move_data$SubjectMeanAS, na.rm = TRUE)  # Usa na.rm = TRUE per ignorare NA
+# Calculating Median (M) and MAD
+M <- median(move_data$SubjectMeanAS, na.rm = TRUE)
 MAD <- mad(move_data$SubjectMeanAS, constant = 1, na.rm = TRUE)
 
-#Recalculating the threshold
+# Defining the threshold
 threshold <- M + 3 * MAD
 
-# Get rid of people too deviated 
+# Filtering subjects out of the threshold
 outlier_subjects <- results$Subject[!is.na(results$SubjectMeanAS) & results$SubjectMeanAS > threshold]
 
-outlier_subjects
+outlier_subject_rows <- results[results$Subject %in% outlier_subjects, ]
+
+outlier_subject_rows
 
 results <- results[!results$Subject %in% outlier_subjects, ]
 
-print(results)
-
-
+results
 ```
 
 ### Controlling the Manipulation Check
 
 ```{r}
+manipulation_check_answers <- results %>%
+  filter(ItemType == "manipulation-check")
+
+manipulation_check_scale <- c(
+  "Strongly disagree" = 1,
+  "Disagree" = 2,
+  "Not agree nor disagree" = 3,
+  "Agree" = 4,
+  "Strongly agree" = 5
+)
+
+manipulation_check_answers <- manipulation_check_answers %>%
+  mutate(MC = manipulation_check_scale[Value])
+
+manipulation_check_t_test <- t.test(MC ~ Group, data = manipulation_check_answers)
+
+manipulation_check_t_test
+```
+
+### Controlling the SD bias questionnaire
+
+```{r}
+
+sd_results <- filter(results, ItemType == "sd-bias")
+
+sd_results 
+
+sd_bias_scale <- c(
+  "25" = "False",
+  "26" = "False",
+  "27" = "False",
+  "28" = "False",
+  "29" = "True",
+  "30" = "False",
+  "31" = "True",
+  "32" = "False",
+  "33" = "True", 
+  "34" = "True", 
+  "35" = "False",
+  "36" = "False", 
+  "37" = "True"
+)
+
+sd_results <- sd_results %>%
+  mutate(SDBias = ifelse(sd_bias_scale[ItemNumber] == Value, 1, 0))
+
+sd_results
+
+sd_bias_scores <- sd_results %>%  
+  group_by(Subject, Group)  %>%
+  summarize(sd_bias_score = sum(SDBias))
 
 
+sd_bias_scores
 
+sd_bias_t_test <- t.test(sd_bias_score ~ Group, data = sd_bias_scores)
+
+sd_bias_t_test
+```
+
+### Constructing models
+
+```{r}
+m1 <- lmer(SubjectMouseSpeed ~ Group + (1 | Subject),
+     data = results)
+
+summary(m1)
+
+m2 <- lmer(SubjectMeanRT ~ Group + (1 | Subject),
+     data = results)
+
+summary(m2)
+
+m3 <- lmer(SubjectMeanAS ~ Group + (1 | Subject),
+     data = results)
+
+summary(m3)
 ```
