@@ -198,6 +198,16 @@ results <- results %>%
   # 6. Remove irrelevant columns
   select(-Start, -End, -EventTime)
 
+# Calculating the mean Mouse speed per partecipant
+  SubjectMeanRT <- results %>%
+  mutate(RT = as.numeric(RT)) %>%  
+  group_by(Subject) %>%  # Grouping
+  summarize(SubjectMeanRT = mean(RT, na.rm = TRUE))  # Do the mean ignoring the NAs
+
+# Join this column to the original dataset
+results <- results %>%
+  left_join(SubjectMeanRT, by = "Subject")
+
 results
 ```
 
@@ -217,12 +227,22 @@ results <- results %>%
   # 4. Rename new column to AnswerSwitches
   rename(AnswerSwitches = n)
 
+# Calculating the mean Mouse speed per partecipant
+SubjectMeanAS <- results %>%
+  mutate(AnswerSwitches = as.numeric(AnswerSwitches)) %>%  
+  group_by(Subject) %>%  # Grouping
+  summarize(SubjectMeanAS = mean(AnswerSwitches, na.rm = TRUE))  # Do the mean ignoring the NAs
+
+# Join this column to the original dataset
+results <- results %>%
+  left_join(SubjectMeanAS, by = "Subject")
+
 results
 ```
 
-### Calculating The Mouse speed
+### Mouse Speed Calculation
 
-Formatting the data in the right way
+#### Formatting the data in the right way
 
 In order to calculate the mouse speed, we are following the approach suggested by PCIBEX for mouse tracking studies (source: <https://www.pcibex.net/wiki/mousetracker-element/>). In short, we first create three new columns to our dataframe (timestamps, xpos, ypos). These will store, respectively, the time and the position of the mouse on the x and y axis. Based on these new columns, we than calculate the mouse speed.
 
@@ -301,7 +321,7 @@ results$ypos <- ypos_get_response
 print(results)
 ```
 
-### Constructing functions and applying them
+#### Constructing functions and applying them
 
 We need to calculate the mose-speed between each timestamp and the following one. Then we will do an average for each participant.
 
@@ -429,9 +449,12 @@ results <- results %>%
 results
 ```
 
-### Eliminating participants too far from the threshold
+### Eliminating participants too far from the threshold in all the three metrics measured
 
 ```{r}
+
+# Fisrt, we do it for the mouse-speed
+
 # Filtering the dataset for the rows that I need 
 move_data <- results[results$Parameter == "Move", ]
 
@@ -449,4 +472,54 @@ filtered_results <- results[!results$Subject %in% outlier_subjects, ]
 
 
 print(filtered_results)
+
+# Then for the RT
+
+#Filtering the data by the function distinct() with Subject and ItemNumber as parameters
+RTdata <- results %>%
+  distinct(Subject, ItemNumber, .keep_all = TRUE)
+
+# Calculating Median (M) e MAD
+M <- median(move_data$SubjectMeanRT, na.rm = TRUE)  # Usa na.rm = TRUE per ignorare NA
+MAD <- mad(move_data$SubjectMeanRT, constant = 1, na.rm = TRUE)
+
+#Recalculating the threshold
+threshold <- M + 3 * MAD
+
+# Get rid of people too deviated 
+outlier_subjects <- results$Subject[!is.na(results$SubjectMeanRT) & results$SubjectMeanRT > threshold]
+
+filtered_results <- results[!results$Subject %in% outlier_subjects, ]
+
+print(filtered_results)
+
+# Then for the AnswerSwitches
+
+#Filtering the data by the function distinct() with Subject and ItemNumber as parameters
+ASdata <- results %>%
+  distinct(Subject, ItemNumber, .keep_all = TRUE)
+
+# Calculating Median (M) e MAD
+M <- median(move_data$SubjectMeanAS, na.rm = TRUE)  # Usa na.rm = TRUE per ignorare NA
+MAD <- mad(move_data$SubjectMeanAS, constant = 1, na.rm = TRUE)
+
+#Recalculating the threshold
+threshold <- M + 3 * MAD
+
+# Get rid of people too deviated 
+outlier_subjects <- results$Subject[!is.na(results$SubjectMeanAS) & results$SubjectMeanAS > threshold]
+
+filtered_results <- results[!results$Subject %in% outlier_subjects, ]
+
+print(filtered_results)
+
+
+```
+
+### Controlling the Manipulation Check 
+
+```{r}
+
+
+
 ```
