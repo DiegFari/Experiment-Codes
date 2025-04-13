@@ -1,5 +1,6 @@
 ---
-title: "research-project"
+title: "experiment-analysis"
+author: "Diego Farinella, Manuel Martin Callejo"
 output: html_document
 date: "`r Sys.Date()`"
 ---
@@ -15,9 +16,10 @@ library(broom)
 library(lme4)
 library(boot)
 library(ordinal)
+library(lmerTest)
 ```
 
-## Research Project
+## Experiment Analysis
 
 ### Data Formatting
 
@@ -419,7 +421,7 @@ results <- results %>%
 results
 ```
 
-### Remove subjects too far from the threshold in all the three metrics measured
+### Remove subjects too far from the threshold in measured metrics
 
 ```{r}
 # Fisrt, mouse-speed
@@ -500,7 +502,7 @@ outlier_subject_rows <- subject_mean_as[subject_mean_as$Subject %in% outlier_sub
 
 outlier_subject_rows
 
-results <- results[!results$Subject %in% outlier_subjects, ]
+# Since the "outlier_subject_rows" for AS removes too many of our participants, we decided to skip filtering those participants out of our results.
 
 results
 ```
@@ -571,45 +573,6 @@ sd_bias_t_test
 ### Constructing models
 
 ```{r}
-# We get the avg mouse speed per subject per experiment question
-subject_group_avg_mouse_speed <- results %>%
-  filter(QuestionType == "experiment") %>%
-  select(Subject, Group, ItemNumber, AvgMouseSpeed) %>%
-  distinct() %>%
-  filter(!is.na(AvgMouseSpeed))
-
-# We graph avg mouse speed to check best transformation for normal distribution:
-ggplot(subject_group_avg_mouse_speed, aes(x = log(AvgMouseSpeed))) +
-  geom_density(fill = "lightblue", alpha = 0.7) +
-  theme_minimal() +
-  labs(title = "Distribution of Log AMS (Density Plot)", x = "Log AMS", y = "Density")
-
-ggplot(subject_group_avg_mouse_speed, aes(x = sqrt(AvgMouseSpeed))) +
-  geom_density(fill = "lightblue", alpha = 0.7) +
-  theme_minimal() +
-  labs(title = "Distribution of Sqrt AMS (Density Plot)", x = "Sqrt AMS", y = "Density")
-
-ggplot(subject_group_avg_mouse_speed, aes(x = (AvgMouseSpeed)^(1/3))) +
-  geom_density(fill = "lightblue", alpha = 0.7) +
-  theme_minimal() +
-  labs(title = "Distribution of Cubed AMS (Density Plot)", x = "Cubed AMS", y = "Density")
-
-ggplot(subject_group_avg_mouse_speed, aes(x = (1/AvgMouseSpeed))) +
-  geom_density(fill = "lightblue", alpha = 0.7) +
-  theme_minimal() +
-  labs(title = "Distribution of Inverse AMS (Density Plot)", x = "Inverse AMS", y = "Density")
-
-# Log transformation yields the best fit for normal distribution:
-m1 <- lmer(log(AvgMouseSpeed) ~ Group + (1 | Subject) + (1 | ItemNumber),
-     data = subject_group_avg_mouse_speed)
-
-summary(m1)
-
-hist(residuals(m1), main="Residuals of the model for AMS")
-plot(density(residuals(m1)), main="Residuals of the model for AMS")
-qqnorm(residuals(m1), main="Residuals of the model for AMS")
-qqline(residuals(m1))
-
 # We get the RT per subject per experiment question
 subject_group_rt <- results %>%
   filter(QuestionType == "experiment") %>%
@@ -639,14 +602,53 @@ ggplot(subject_group_rt, aes(x = (1/RT))) +
   labs(title = "Distribution of Inverse RT (Density Plot)", x = "Inverse RT", y = "Density")
 
 # Log transformation yields the best fit for normal distribution:
-m2 <- lmer(log(RT) ~ Group + (1 | Subject) + (1 | ItemNumber),
+m1 <- lmer(log(RT) ~ Group + (1 | Subject) + (1 | ItemNumber),
      data = subject_group_rt)
+
+summary(m1)
+
+hist(residuals(m1), main="Residuals of the model for log RT")
+plot(density(residuals(m1)), main="Residuals of the model for log RT")
+qqnorm(residuals(m1), main="Residuals of the model for log RT") 
+qqline(residuals(m1))
+
+# We get the avg mouse speed per subject per experiment question
+subject_group_avg_mouse_speed <- results %>%
+  filter(QuestionType == "experiment") %>%
+  select(Subject, Group, ItemNumber, AvgMouseSpeed) %>%
+  distinct() %>%
+  filter(!is.na(AvgMouseSpeed))
+
+# We graph avg mouse speed to check best transformation for normal distribution:
+ggplot(subject_group_avg_mouse_speed, aes(x = log(AvgMouseSpeed))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Log AMS (Density Plot)", x = "Log AMS", y = "Density")
+
+ggplot(subject_group_avg_mouse_speed, aes(x = sqrt(AvgMouseSpeed))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Sqrt AMS (Density Plot)", x = "Sqrt AMS", y = "Density")
+
+ggplot(subject_group_avg_mouse_speed, aes(x = (AvgMouseSpeed)^(1/3))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Cubed AMS (Density Plot)", x = "Cubed AMS", y = "Density")
+
+ggplot(subject_group_avg_mouse_speed, aes(x = (1/AvgMouseSpeed))) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Inverse AMS (Density Plot)", x = "Inverse AMS", y = "Density")
+
+# Log transformation yields the best fit for normal distribution:
+m2 <- lmer(log(AvgMouseSpeed) ~ Group + (1 | Subject) + (1 | ItemNumber),
+     data = subject_group_avg_mouse_speed)
 
 summary(m2)
 
-hist(residuals(m2), main="Residuals of the model for log RT")
-plot(density(residuals(m2)), main="Residuals of the model for log RT")
-qqnorm(residuals(m2), main="Residuals of the model for log RT") 
+hist(residuals(m2), main="Residuals of the model for AMS")
+plot(density(residuals(m2)), main="Residuals of the model for AMS")
+qqnorm(residuals(m2), main="Residuals of the model for AMS")
 qqline(residuals(m2))
 
 subject_group_as <- results %>%
